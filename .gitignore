@@ -1,0 +1,20 @@
+# Python 打包产物
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+*.manifest
+
+# 本机工具目录 / 临时文件
+.lcas/
+pyinstaller
+*.log
+
+# 微软雅黑字体（约 49MB）。Windows 系统自带，程序会自动调用系统字体；
+# 需要重新打包 exe 时，把 C:\Windows\Fonts 下的 msyh.ttc / msyhbd.ttc 复制到本目录即可。
+*.ttc
+
+# 编辑器
+.vscode/
+.idea/

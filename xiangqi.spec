@@ -15,7 +15,7 @@ for src, dst in (
         datas.append((src, dst))
 
 # uifont.py 是被 import 的，PyInstaller 会自动带上，这里列出来只是提醒
-hiddenimports = ['uifont']
+hiddenimports = ['uifont', 'version']
 
 a = Analysis(
     ['xiangqi.py'],

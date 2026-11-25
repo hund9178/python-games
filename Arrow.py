@@ -3,11 +3,13 @@ import math
 import sys
 import random
 
+from version import caption
+
 pygame.init()
 
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption("射箭小游戏")
+pygame.display.set_caption(caption("射箭小游戏"))
 clock = pygame.time.Clock()
 
 WHITE = (255, 255, 255)

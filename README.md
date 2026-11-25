@@ -1,6 +1,13 @@
 # 我的 Python 小游戏合集
 
+[![版本](https://img.shields.io/github/v/release/hund9178/python-games?label=%E7%89%88%E6%9C%AC&color=blue)](https://github.com/hund9178/python-games/releases)
+[![许可证](https://img.shields.io/github/license/hund9178/python-games)](https://github.com/hund9178/python-games/blob/main/fonts/LICENSE.txt)
+[![python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![pygame](https://img.shields.io/badge/pygame--ce-2.5.8-green)](https://pyga.me/)
+
 用 Python + pygame 写的几个小游戏，在 Windows 上装好 Python 就能直接跑，也可以打包成 exe 双击玩。
+
+**当前版本 v1.0.0** — 版本号写在 `version.py` 里，各游戏的窗口标题都会显示。
 
 | 项目 | 主文件 | 说明 |
 |---|---|---|
@@ -67,6 +74,7 @@ python tools/build_font.py
 
 ```
 Python/
+├── version.py            版本号（各游戏共用，改这里就行）
 ├── xiangqi.py            中国象棋主程序
 ├── xiangqi_rules.py      象棋规则引擎 + AI 搜索（纯 Python，不依赖 pygame）
 ├── xiangqi_full.py       象棋旧版界面（带右侧栏和走法记录）
@@ -80,6 +88,26 @@ Python/
 ├── *.spec                PyInstaller 打包配置
 └── docs/xiangqi.md       象棋详细说明
 ```
+
+## 发一个新版本
+
+版本号在 `version.py` 里。改完版本号后：
+
+```bash
+# 提交改动
+git add -A
+git commit -m "版本号升到 v1.1.0"
+
+# 打标签并推到 GitHub
+git tag -a v1.1.0 -m "v1.1.0"
+git push origin main --tags
+
+# 生成 Release 页面（可选，带打包好的 exe）
+python -m PyInstaller --noconfirm --clean xiangqi.spec
+gh release create v1.1.0 dist/*.exe --title "v1.1.0" --generate-notes
+```
+
+GitHub 仓库首页的版本徽章会自动跟着 `latest` release 更新。
 
 ## 测试
 

@@ -3,12 +3,13 @@ import sys
 import math
 
 from uifont import Fonts
+from version import caption
 
 # 1. 初始化设置
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("真实物理滚球模拟")
+pygame.display.set_caption(caption("真实物理滚球模拟"))
 clock = pygame.time.Clock()
 
 fonts = Fonts()

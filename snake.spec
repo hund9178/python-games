@@ -14,7 +14,7 @@ for src, dst in (
     if os.path.exists(src):
         datas.append((src, dst))
 
-hiddenimports = ['uifont']
+hiddenimports = ['uifont', 'version']
 
 a = Analysis(
     ['snake.py'],

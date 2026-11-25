@@ -5,13 +5,14 @@ import sys
 from collections import deque
 
 from uifont import Fonts
+from version import caption
 
 # 1. 初始化设置
 pygame.init()
 CELL_SIZE = 20
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("贪吃蛇 - 穿墙版")
+pygame.display.set_caption(caption("贪吃蛇 - 穿墙版"))
 
 fonts = Fonts()
 

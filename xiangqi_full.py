@@ -26,6 +26,7 @@ import pygame
 from xiangqi_rules import (RED, BLACK, GameState, legal_moves, best_move,
                            move_notation, game_result, CHARS)
 from uifont import Fonts, chinese_font_available, font_source
+from version import VERSION, caption
 
 # ==========================================================================
 # 布局与配色
@@ -180,7 +181,7 @@ class XiangqiApp:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((WIN_W, WIN_H))
-        pygame.display.set_caption('象棋 · Chinese Chess')
+        pygame.display.set_caption(caption('象棋 · Chinese Chess'))
         self.icon = self._make_icon()
         if self.icon:
             pygame.display.set_icon(self.icon)

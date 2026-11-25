@@ -1,12 +1,24 @@
 # -*- mode: python ; coding: utf-8 -*-
+"""打包配置：version.py 一起带上，缺字体文件时也不会构建失败。"""
+import os
 
+datas = []
+for src, dst in (
+    ('fonts/NotoSansSC.ttf', 'fonts'),
+    ('fonts/NotoSansSC-Bold.ttf', 'fonts'),
+    ('fonts/LICENSE.txt', 'fonts'),
+):
+    if os.path.exists(src):
+        datas.append((src, dst))
+
+hiddenimports = ['version']
 
 a = Analysis(
     ['Arrow.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

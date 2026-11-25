@@ -32,6 +32,7 @@ import pygame
 from xiangqi_rules import (RED, BLACK, GameState, legal_moves, best_move,
                            move_notation, game_result, CHARS)
 from uifont import Fonts, chinese_font_available, font_source
+from version import VERSION, caption
 
 # ==========================================================================
 # 布局与配色
@@ -340,7 +341,7 @@ class XiangqiApp:
             self.screen = pygame.display.set_mode((w, h), pygame.FULLSCREEN)
         else:
             self.screen = pygame.display.set_mode((WINDOW_W, WINDOW_H))
-        pygame.display.set_caption('象棋')
+        pygame.display.set_caption(caption('象棋'))
         if self.icon:
             pygame.display.set_icon(self.icon)
         self.set_layout(self.screen.get_size())

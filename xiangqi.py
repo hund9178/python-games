@@ -31,6 +31,7 @@ import pygame
 
 from xiangqi_rules import (RED, BLACK, GameState, legal_moves, best_move,
                            move_notation, game_result, CHARS)
+from uifont import Fonts, chinese_font_available, font_source
 
 # ==========================================================================
 # 布局与配色
@@ -201,37 +202,6 @@ class Layout:
 # ==========================================================================
 # 字体与音效
 # ==========================================================================
-class Fonts:
-    def __init__(self):
-        self.cache = {}
-
-    def get(self, size, bold=False):
-        key = (size, bold)
-        if key not in self.cache:
-            self.cache[key] = self._make(size, bold)
-        return self.cache[key]
-
-    def _make(self, size, bold):
-        for name in ('simhei', 'microsoftyahei', 'msyh'):
-            try:
-                f = pygame.font.SysFont(name, size, bold=bold)
-                if f is not None:
-                    return f
-            except Exception:
-                pass
-        base = os.path.dirname(os.path.abspath(__file__))
-        if getattr(sys, 'frozen', False):
-            base = getattr(sys, '_MEIPASS', base)
-        for fname in ('msyh.ttc', 'msyhbd.ttc'):
-            path = os.path.join(base, fname)
-            if os.path.exists(path):
-                try:
-                    return pygame.font.Font(path, size)
-                except Exception:
-                    pass
-        return pygame.font.Font(None, size)
-
-
 class Sounds:
     """程序生成的轻量音效（无音频设备时自动降级）。"""
 
@@ -322,6 +292,9 @@ class XiangqiApp:
     def __init__(self, fullscreen=True):
         pygame.init()
         self.fonts = Fonts()
+        self.font_warning = '' if chinese_font_available() else (
+            '未找到中文字体，界面文字可能显示为方框。'
+            '请确认程序目录下有 fonts 文件夹。')
         self.fullscreen = fullscreen
         self.screen = None
         self.layout = None
@@ -868,7 +841,21 @@ class XiangqiApp:
         self.draw_buttons()
         self.draw_tip()
         self.draw_overlay()
+        self.draw_font_warning()
         pygame.display.flip()
+
+    def draw_font_warning(self):
+        """没找到中文字体时，在屏幕顶部挂一条提示。"""
+        if not self.font_warning:
+            return
+        L = self.layout
+        f = self.fonts.get(max(14, min(20, int(L.w * 0.016))), bold=True)
+        img = f.render(self.font_warning, True, (255, 240, 220))
+        box = pygame.Rect(0, 0, L.w, img.get_height() + 10)
+        layer = pygame.Surface(box.size, pygame.SRCALPHA)
+        layer.fill((150, 30, 26, 225))
+        self.screen.blit(layer, (0, 0))
+        self.screen.blit(img, img.get_rect(center=(L.w // 2, box.height // 2)))
 
     def draw_card(self):
         """宽屏时在棋盘这一列后面垫一块卡片。"""

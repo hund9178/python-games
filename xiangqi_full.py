@@ -25,6 +25,7 @@ import pygame
 
 from xiangqi_rules import (RED, BLACK, GameState, legal_moves, best_move,
                            move_notation, game_result, CHARS)
+from uifont import Fonts, chinese_font_available, font_source
 
 # ==========================================================================
 # 布局与配色
@@ -90,37 +91,6 @@ def row_at(py):
 # ==========================================================================
 # 字体与音效
 # ==========================================================================
-class Fonts:
-    def __init__(self):
-        self.cache = {}
-
-    def get(self, size, bold=False):
-        key = (size, bold)
-        if key not in self.cache:
-            self.cache[key] = self._make(size, bold)
-        return self.cache[key]
-
-    def _make(self, size, bold):
-        for name in ('simhei', 'microsoftyahei', 'msyh'):
-            try:
-                f = pygame.font.SysFont(name, size, bold=bold)
-                if f is not None:
-                    return f
-            except Exception:
-                pass
-        base = os.path.dirname(os.path.abspath(__file__))
-        if getattr(sys, 'frozen', False):
-            base = getattr(sys, '_MEIPASS', base)
-        for fname in ('msyh.ttc', 'msyhbd.ttc'):
-            path = os.path.join(base, fname)
-            if os.path.exists(path):
-                try:
-                    return pygame.font.Font(path, size)
-                except Exception:
-                    pass
-        return pygame.font.Font(None, size)
-
-
 class Sounds:
     """程序生成的轻量音效（无音频设备时自动降级）。"""
 

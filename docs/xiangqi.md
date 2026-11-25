@@ -19,9 +19,25 @@ python xiangqi.py
 | `xiangqi.py` | 图形界面（简易版）：大棋盘、大字提示、棋谱面板、大按钮、存读棋局 |
 | `xiangqi_rules.py` | 规则引擎：走法生成、攻击判定、局面评估、AI 搜索、中文记谱 |
 | `xiangqi_full.py` | 旧版界面：带右侧栏、走法记录与难度按钮，`python xiangqi_full.py` 可运行 |
+| `uifont.py` | 中文字体解析，各游戏共用；找不到时用程序自带的字体兜底 |
+| `fonts/` | 随包携带的中文字体子集（Noto Sans SC，SIL OFL 协议） |
 | `xiangqi.spec` | PyInstaller 打包配置 |
 | `test_xiangqi_rules.py` | 规则引擎测试（72 项） |
 | `test_xiangqi_ui.py` | 界面交互测试（79 项，无头模式） |
+| `test_uifont.py` | 中文字体测试（模拟没装黑体的电脑） |
+
+## 中文字体
+
+界面所有中文都由 `uifont.py` 负责渲染。程序按顺序找字体：
+
+1. 程序自带的 `fonts/NotoSansSC.ttf`，粗体用 `fonts/NotoSansSC-Bold.ttf`
+2. 系统里装的中文字体（微软雅黑、黑体、Noto Sans SC 等）
+3. 系统字体目录里直接按文件名找
+
+每个候选都会被**实际渲染几个汉字来验证**，只有真能画出字形的才会被采用。
+这样在没装黑体的电脑上也不会出现满屏方框。
+
+如果真的一个中文字体都找不到，屏幕顶部会挂一条红色提示条，说明字体出了什么问题。
 
 ## 界面
 

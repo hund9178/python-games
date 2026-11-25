@@ -1,12 +1,27 @@
 # -*- mode: python ; coding: utf-8 -*-
+"""打包配置：字体和 uifont.py 一起带上，缺字体文件时也不会构建失败。"""
+import os
 
+# 随包携带的文件。字体文件不存在就跳过，避免换台电脑构建直接报错。
+datas = []
+for src, dst in (
+    ('fonts/NotoSansSC.ttf', 'fonts'),
+    ('fonts/NotoSansSC-Bold.ttf', 'fonts'),
+    ('fonts/LICENSE.txt', 'fonts'),
+    ('msyh.ttc', '.'),
+    ('msyhbd.ttc', '.'),
+):
+    if os.path.exists(src):
+        datas.append((src, dst))
+
+hiddenimports = ['uifont']
 
 a = Analysis(
     ['ball.py'],
     pathex=[],
     binaries=[],
-    datas=[('msyh.ttc', '.')],
-    hiddenimports=[],
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

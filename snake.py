@@ -1,6 +1,10 @@
+import random
+
 import pygame
 import sys
 from collections import deque
+
+from uifont import Fonts
 
 # 1. 初始化设置
 pygame.init()
@@ -8,6 +12,8 @@ CELL_SIZE = 20
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("贪吃蛇 - 穿墙版")
+
+fonts = Fonts()
 
 # 定义颜色
 WHITE = (255, 255, 255)
@@ -33,7 +39,7 @@ food = get_food()
 
 # 3. 绘制文字 (支持居中)
 def draw_text(text, font_size, color, center=False):
-    font = pygame.font.SysFont("simhei", font_size)
+    font = fonts.get(font_size)
     text_surface = font.render(text, True, color)
     if center:
         screen.blit(text_surface, (WIDTH // 2 - text_surface.get_width() // 2, HEIGHT // 2 - text_surface.get_height() // 2))

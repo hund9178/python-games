@@ -11,8 +11,10 @@ __pycache__/
 pyinstaller
 *.log
 
-# 微软雅黑字体（约 49MB）。Windows 系统自带，程序会自动调用系统字体；
-# 需要重新打包 exe 时，把 C:\Windows\Fonts 下的 msyh.ttc / msyhbd.ttc 复制到本目录即可。
+# 微软雅黑字体（系统自带，约 49MB，不进仓库）。
+# 程序改用 fonts/ 下的 Noto Sans SC 子集字体，无需手工复制。
+# 只有想改用微软雅黑重新打包时，才需要把 C:\Windows\Fonts 下的
+# msyh.ttc / msyhbd.ttc 复制到本目录。
 *.ttc
 
 # 编辑器

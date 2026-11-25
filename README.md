@@ -39,7 +39,29 @@ python -m PyInstaller --noconfirm --clean xiangqi.spec
 
 生成的 exe 在 `dist/` 目录下，可以直接拷到别的电脑上双击运行，不用装 Python。
 
-> `ball.spec` 和 `xiangqi.spec` 用到微软雅黑字体（`msyh.ttc`、`msyhbd.ttc`）。这两个文件没有放进仓库（太大，而且系统自带），需要打包前从 `C:\Windows\Fonts\` 复制到本目录。程序运行时优先调用系统字体，所以直接玩是不受影响的。
+> 字体已经打包进去了：程序自带 `fonts/` 下的 Noto Sans SC 子集字体（SIL OFL 协议，可自由分发），
+> 所以换台没装黑体的电脑也不会出现满屏方框。打包前不需要再手工复制任何字体文件。
+
+## 中文字体
+
+程序通过 `uifont.py` 找中文字体，顺序是：
+
+1. 程序自带的 `fonts/NotoSansSC.ttf`（粗体用 `NotoSansSC-Bold.ttf`）
+2. 系统里装的中文字体（微软雅黑、黑体、Noto Sans SC 等）
+3. 系统字体目录里直接按文件名找
+
+每个候选都会**实际渲染几个汉字来验证**，只有真能画出字形的才会被采用。
+早期版本用 `pygame.font.SysFont()`，它在找不到字体时不会报错，而是悄悄用英文字体顶替，
+导致中文全变成方框；那段「读本地字体文件」的兜底逻辑也因此永远执行不到。
+
+想重新生成字体子集（改了界面文字后）：
+
+```bash
+pip install fonttools
+python tools/build_font.py
+```
+
+脚本从系统的 Noto Sans SC 切出只含游戏用到的字符的新字体，输出约 150KB。
 
 ## 目录说明
 
@@ -48,8 +70,12 @@ Python/
 ├── xiangqi.py            中国象棋主程序
 ├── xiangqi_rules.py      象棋规则引擎 + AI 搜索（纯 Python，不依赖 pygame）
 ├── xiangqi_full.py       象棋旧版界面（带右侧栏和走法记录）
+├── uifont.py             中文字体解析（各游戏共用）
+├── fonts/                随包携带的中文字体子集（Noto Sans SC，OFL 协议）
+├── tools/build_font.py   重新生成字体子集的脚本
 ├── test_xiangqi_rules.py 象棋规则引擎测试（72 项）
 ├── test_xiangqi_ui.py    象棋界面交互测试（79 项）
+├── test_uifont.py        中文字体测试（模拟缺字体电脑）
 ├── snake.py / ball.py / Arrow.py / 1.py    其它小游戏
 ├── *.spec                PyInstaller 打包配置
 └── docs/xiangqi.md       象棋详细说明
@@ -60,6 +86,7 @@ Python/
 ```bash
 python test_xiangqi_rules.py   # 规则引擎测试
 python test_xiangqi_ui.py       # 界面交互测试（自动使用无头显示驱动）
+python test_uifont.py           # 中文字体测试
 ```
 
 ## 运行环境

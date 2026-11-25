@@ -2,12 +2,16 @@ import pygame
 import sys
 import math
 
+from uifont import Fonts
+
 # 1. 初始化设置
 pygame.init()
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("真实物理滚球模拟")
 clock = pygame.time.Clock()
+
+fonts = Fonts()
 
 # 颜色
 WHITE = (255, 255, 255)
@@ -62,7 +66,7 @@ class RollingBall:
 
 # 3. 初始化圆球和字体
 ball = RollingBall()
-font = pygame.font.SysFont("simhei", 24)
+font = fonts.get(24)
 
 # 4. 主循环
 running = True

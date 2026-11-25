@@ -1,0 +1,12 @@
+Noto Sans SC 字体子集
+=====================
+
+本目录下的 NotoSansSC.ttf / NotoSansSC-Bold.ttf 是从 Google Noto Sans SC
+裁剪而来，只保留游戏用到的字符。
+
+原字体: Noto Sans SC (Google)
+许可证: SIL Open Font License 1.1 (OFL-1.1)
+         https://scripts.sil.org/OFL
+
+OFL 1.1 允许自由使用、修改、嵌入和再分发该字体，
+要求保留本许可证和版权声明，且不得单独售卖字体本身。

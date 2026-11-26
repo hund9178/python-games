@@ -679,10 +679,13 @@ class XiangqiApp:
     def on_button(self, bid):
         if bid == 'new':
             self.new_game()
+            self.paused = False
         elif bid == 'undo':
             self.undo()
+            self.paused = False
         elif bid == 'hint':
             self.request_hint()
+            self.paused = False
         elif bid == 'sound':
             self.sounds.enabled = not self.sounds.enabled
         elif bid == 'level':

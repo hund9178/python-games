@@ -211,13 +211,25 @@ app.paused = True
 btn = [b for b in app.pause_buttons if b['id'] == 'undo'][0]
 app.on_left_click(btn['rect'].center)
 check('点击悔棋按钮不报错', app.state.turn == RED)
-check('暂停时仍能操作菜单', app.paused is True)
+check('暂停时点蓝色按钮会关掉菜单', app.paused is False)
 resume = [b for b in app.pause_buttons if b['id'] == 'resume'][0]
+app.paused = True
 app.on_left_click(resume['rect'].center)
 check('点继续后关掉菜单', app.paused is False)
 app.on_left_click(app.layout.pause_btn.center)
 check('点顶栏按钮能打开菜单', app.paused is True)
 app.on_left_click(resume['rect'].center)
+check('再点一次继续能关掉菜单', app.paused is False)
+
+# --- 暂停菜单里的蓝色按钮：点完自动关掉菜单 -------------------------------
+for bid, name in (('new', '新局'), ('undo', '悔棋'), ('hint', '提示')):
+    app.paused = True
+    app.on_button(bid)
+    check('点%s后关掉菜单' % name, app.paused is False)
+app.paused = True
+app.on_button('level')
+check('点难度后菜单还开着', app.paused is True)
+app.paused = False
 
 # --- 棋谱记录面板 ---------------------------------------------------------
 app.new_game()

@@ -2,7 +2,7 @@
 """
 弹球物理与速度箭头测试
 ==========================================
-检查滚动物理、加速方向和速度箭头的映射关系是否正确。
+检查滚动物理、加速方向、定住蓄力和速度箭头的映射关系是否正确。
 
 运行：
     python test_ball.py
@@ -62,21 +62,22 @@ b = ball.RollingBall(None)
 simulate(b, 30)
 check('摩擦足够时球会完全停下', b.speed() == 0.0, '当前速度 %.2f' % b.speed())
 check('停下后不再画箭头', b.arrow_state() is None)
+check('停稳后攒着的力清零', b.pending_force == 0.0)
 
-# --- 3. 运动中加速：方向不变，速度变大 ---
+# --- 3. 运动中按空格加速：方向不变，速度变大 ---
 b = ball.RollingBall(None)
 b.vx, b.vy = 400.0, 0.0
 before_dir = math.atan2(b.vy, b.vx)
 before_speed = b.speed()
 b.boost()
 after_dir = math.atan2(b.vy, b.vx)
-check('加速后方向保持不变',
+check('空格加速后方向保持不变',
       abs((after_dir - before_dir + math.pi) % (2 * math.pi) - math.pi) < 1e-6)
-check('加速后速度变大', b.speed() > before_speed,
+check('空格加速后速度变大', b.speed() > before_speed,
       '%.1f -> %.1f' % (before_speed, b.speed()))
-check('加速不超过速度上限', b.speed() <= ball.MAX_SPEED + 1e-6)
+check('空格加速不超过速度上限', b.speed() <= ball.MAX_SPEED + 1e-6)
 
-# --- 4. 静止时加速：方向随机 ---
+# --- 4. 静止时按空格：方向随机 ---
 angles = []
 for _ in range(12):
     b = ball.RollingBall(None)
@@ -92,14 +93,64 @@ else:
 check('静止时加速的方向确实是随机的',
       len({round(a, 2) for a in angles}) > 1, '取样方向: %r' % angles)
 
-# --- 5. 箭头指向运动方向 ---
+# --- 5. R 定住：球停住，保存原来的力和方向 ---
+b = ball.RollingBall(None)
+b.vx, b.vy = 400.0, 0.0
+b.toggle_hold()
+check('按 R 后球被定住', b.held)
+check('按 R 后球不动了', b.speed() == 0.0)
+check('按 R 时保存了原来的力', abs(b.hold_speed - 400.0) < 1e-6,
+      '保存了 %.1f' % b.hold_speed)
+check('按 R 时保存了原来的方向',
+      abs(b.hold_dir[0] - 1.0) < 1e-6 and abs(b.hold_dir[1]) < 1e-6)
+
+x0, y0, held_speed = b.x, b.y, b.hold_speed
+simulate(b, 3)
+check('定住期间球不动', b.x == x0 and b.y == y0)
+check('定住期间保存的力不衰减', b.hold_speed == held_speed)
+check('定住时箭头指向保存的方向', b.arrow_state() is not None
+      and b.arrow_state()[2] == ball.HOLD_COLOR)
+
+# --- 6. 定住时按空格：按原方向原力度放出去 ---
+b = ball.RollingBall(None)
+b.vx, b.vy = 400.0, 0.0
+b.toggle_hold()
+b.boost()
+check('空格把定住的球放了出去', not b.held)
+check('放出去时保留了原来的速度', abs(b.speed() - 400.0) < 1e-6,
+      '实际 %.1f' % b.speed())
+check('放出去时保留了原来的方向', b.vx > 0 and abs(b.vy) < 1e-6)
+check('放出去的力记在账上，等 R 一次放完',
+      abs(b.pending_force - 400.0) < 1e-6, '%.1f' % b.pending_force)
+
+# --- 7. 定住时按 R：直接弹出去，力放大 ---
+b = ball.RollingBall(None)
+b.vx, b.vy = 400.0, 0.0
+b.toggle_hold()
+b.toggle_hold()
+check('定住时按 R 会弹出去', not b.held)
+check('定住时按 R 的力度是保存时的 %.1f 倍' % ball.FLING_FACTOR,
+      abs(b.speed() - 400.0 * ball.FLING_FACTOR) < 1e-6, '实际 %.1f' % b.speed())
+check('弹出去后攒着的力清零', b.pending_force == 0.0)
+
+# --- 8. 攒着力时按 R：一次全放出来 ---
+b = ball.RollingBall(None)
+b.vx, b.vy = 400.0, 0.0
+b.pending_force = 300.0
+b.toggle_hold()
+check('攒着力时按 R 是弹出去而不是定住', not b.held)
+check('攒着的力一次全放出来', abs(b.speed() - 700.0) < 1e-6,
+      '实际 %.1f' % b.speed())
+check('放完以后攒力归零', b.pending_force == 0.0)
+
+# --- 9. 箭头指向运动方向 ---
 b = ball.RollingBall(None)
 b.vx, b.vy = 300.0, 400.0
 ang, length, color = b.arrow_state()
 check('箭头角度等于速度方向角',
       abs(ang - math.atan2(b.vy, b.vx)) < 1e-9)
 
-# --- 6. 速度越快箭头越长 ---
+# --- 10. 速度越快箭头越长 ---
 lengths = []
 for speed in (50.0, 300.0, 600.0, 1000.0):
     b = ball.RollingBall(None)
@@ -109,7 +160,7 @@ check('箭头长度随速度递增',
       lengths == sorted(lengths) and lengths[0] < lengths[-1],
       '各速度对应长度: %r' % lengths)
 
-# --- 7. 速度越快箭头颜色越深 ---
+# --- 11. 速度越快箭头颜色越深 ---
 sums = []
 for speed in (50.0, 300.0, 600.0, 1000.0):
     b = ball.RollingBall(None)
@@ -120,7 +171,7 @@ check('箭头颜色随速度变深',
       sums == sorted(sums, reverse=True) and sums[0] > sums[-1],
       '各速度颜色亮度: %r' % sums)
 
-# --- 8. 帧率无关：60 帧和 30 帧跑 1 秒结果接近 ---
+# --- 12. 帧率无关：60 帧和 30 帧跑 1 秒结果接近 ---
 def distance_after_one_second(dt):
     b = ball.RollingBall(None)
     b.vx, b.vy = ball.INITIAL_SPEED, 0.0

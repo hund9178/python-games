@@ -60,6 +60,64 @@ def chinese_ok(font, sample='帅仕相车马炮兵'):
     return True, ''
 
 
+# 私用区字符一般没有字形，渲染出来就是字体里的 .notdef 方框，
+# 拿它当基准就能判断某个字符是不是真的缺字形。
+NOTDEF_PROBE = '\ue000'
+
+
+def _bitmap(font, ch):
+    return pygame.image.tobytes(font.render(ch, True, (0, 0, 0)), 'RGBA')
+
+
+def is_square_glyph(ch):
+    """汉字、中文标点应该画成方的；° 这类窄符号本来就很窄。"""
+    code = ord(ch)
+    return (0x2E80 <= code <= 0x9FFF or 0xF900 <= code <= 0xFAFF
+            or 0xFF00 <= code <= 0xFFEF or 0x3000 <= code <= 0x303F)
+
+
+# Noto Sans SC 里根本没有表情符号，1.py 是控制台游戏不走 pygame 字体，
+# 这类字符不参与覆盖检查。
+NO_GLYPH_RANGES = (
+    (0x1F000, 0x1FAFF),   # 表情和 pictograph
+    (0x2600, 0x27BF),     # 杂项符号、装饰符号（❌ 等）
+)
+
+
+def needs_glyph(ch):
+    """这个字符需要随包字体提供字形吗？"""
+    code = ord(ch)
+    return not any(a <= code <= b for a, b in NO_GLYPH_RANGES)
+
+
+def missing_glyphs(font, chars):
+    """返回没有字形的字符列表。
+
+    缺字形时 pygame 会画一个 .notdef 方框，跟探针字符渲染结果完全一样。
+    """
+    notdef = _bitmap(font, NOTDEF_PROBE)
+    if _bitmap(font, '中') == notdef:
+        # 探针不可用（字体里居然有私用区字形），退回按宽度判断
+        out = []
+        for ch in chars:
+            w, h = font.size(ch)
+            if w <= 0 or h <= 0 or (is_square_glyph(ch) and w < h * 0.5):
+                out.append(ch)
+        return out
+
+    out = []
+    for ch in chars:
+        if _bitmap(font, ch) == notdef:
+            out.append(ch)
+            continue
+        w, h = font.size(ch)
+        if w <= 0 or h <= 0:
+            out.append(ch)
+        elif is_square_glyph(ch) and w < h * 0.5:
+            out.append(ch)  # 缺字形时渲染成窄条
+    return out
+
+
 print('=' * 60)
 print('中文字体测试')
 print('=' * 60)
@@ -82,12 +140,7 @@ for path in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                 chars.add(ch)
 
 subset = pygame.font.Font(os.path.join(fonts_dir, 'NotoSansSC.ttf'), 32)
-missing = []
-for ch in sorted(chars):
-    img = subset.render(ch, True, (0, 0, 0))
-    w, h = img.get_size()
-    if h <= 0 or w < h * 0.5:
-        missing.append(ch)
+missing = missing_glyphs(subset, [c for c in sorted(chars) if needs_glyph(c)])
 check('子集字体覆盖全部 %d 个非 ASCII 字符' % len(chars),
       not missing, '缺字形: %r' % missing[:20])
 

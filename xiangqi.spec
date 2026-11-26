@@ -39,6 +39,7 @@ exe = EXE(
     a.datas,
     [],
     name='xiangqi',
+    icon='xiangqi.ico',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

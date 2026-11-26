@@ -7,13 +7,13 @@
 
 用 Python + pygame 写的几个小游戏，在 Windows 上装好 Python 就能直接跑，也可以打包成 exe 双击玩。
 
-**当前版本 v1.0.0** — 版本号写在 `version.py` 里，各游戏的窗口标题都会显示。
+**当前版本 v1.1.0** — 版本号写在 `version.py` 里，各游戏的窗口标题都会显示。
 
 | 项目 | 主文件 | 说明 |
 |---|---|---|
-| 🀄 **中国象棋** | `xiangqi.py` | 完整规则 + 中文记谱 + 内置 AI 对手，全屏大字体界面，带棋谱记录和存读棋局。[详细说明](docs/xiangqi.md) |
+| 🀄 **中国象棋** | `xiangqi.py` | 完整规则 + 中文记谱 + 内置 AI 对手，全屏大字体界面，棋盘占满画面，所有按钮收在「暂停」菜单里，带棋谱记录和存读棋局。[详细说明](docs/xiangqi.md) |
 | 🐍 **贪吃蛇** | `snake.py` | 经典贪吃蛇，方向键控制，吃一个变长一点。 |
-| 🏓 **弹球** | `ball.py` | 挡板接球，碰到边缘反弹，计分。 |
+| 🏓 **弹球** | `ball.py` | 滚球物理模拟：地面摩擦、落地反弹、撞墙减速，速度箭头标出方向和快慢。 |
 | 🏹 **射箭** | `Arrow.py` | 鼠标控制弓箭手瞄准，空格键射箭射靶。 |
 | 🔢 **猜数字** | `1.py` | 控制台版猜数字游戏，1~100，十次机会。 |
 
@@ -48,6 +48,9 @@ python -m PyInstaller --noconfirm --clean xiangqi.spec
 
 > 字体已经打包进去了：程序自带 `fonts/` 下的 Noto Sans SC 子集字体（SIL OFL 协议，可自由分发），
 > 所以换台没装黑体的电脑也不会出现满屏方框。打包前不需要再手工复制任何字体文件。
+>
+> 象棋的 exe 自带图标（红边「帅」棋子），快捷方式显示的就是这个图标。
+> 改了图标后重新生成：`python tools/build_icon.py`，再重新打包即可。
 
 ## 中文字体
 
@@ -81,9 +84,11 @@ Python/
 ├── uifont.py             中文字体解析（各游戏共用）
 ├── fonts/                随包携带的中文字体子集（Noto Sans SC，OFL 协议）
 ├── tools/build_font.py   重新生成字体子集的脚本
+├── tools/build_icon.py   重新生成 exe 图标（xiangqi.ico）的脚本
 ├── test_xiangqi_rules.py 象棋规则引擎测试（72 项）
 ├── test_xiangqi_ui.py    象棋界面交互测试（79 项）
 ├── test_uifont.py        中文字体测试（模拟缺字体电脑）
+├── test_ball.py          弹球物理与速度箭头测试
 ├── snake.py / ball.py / Arrow.py / 1.py    其它小游戏
 ├── *.spec                PyInstaller 打包配置
 └── docs/xiangqi.md       象棋详细说明
@@ -115,6 +120,7 @@ GitHub 仓库首页的版本徽章会自动跟着 `latest` release 更新。
 python test_xiangqi_rules.py   # 规则引擎测试
 python test_xiangqi_ui.py       # 界面交互测试（自动使用无头显示驱动）
 python test_uifont.py           # 中文字体测试
+python test_ball.py             # 弹球物理与速度箭头测试
 ```
 
 ## 运行环境

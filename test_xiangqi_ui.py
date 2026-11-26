@@ -45,9 +45,10 @@ BY = app.board_y
 
 check('窗口尺寸', app.screen.get_size() == (660, 1000), str(app.screen.get_size()))
 check('没有右侧栏', not hasattr(xiangqi, 'PANEL_X'))
-check('大按钮 7 个', len(app.buttons) == 7, str(len(app.buttons)))
-check('按钮尺寸够大', all(b['rect'].width >= 130 and b['rect'].height >= 54
-                          for b in app.buttons))
+check('暂停面板按钮 9 个', len(app.pause_buttons) == 9, str(len(app.pause_buttons)))
+check('按钮尺寸够大', all(b['rect'].width >= 100 and b['rect'].height >= 44
+                          for b in app.pause_buttons))
+check('主界面没有底部按钮行', not hasattr(app, 'buttons'))
 check('初始 32 枚棋子',
       sum(1 for r in range(10) for c in range(9) if app.state.board[r][c]) == 32)
 app.draw(); pygame.image.save(app.screen, os.path.join(TMP, 'xq_start.png'))
@@ -66,21 +67,18 @@ check('小屏布局不超出屏幕',
 check('小屏时格子缩小', lay_small.cell < lay_big.cell,
       '%d vs %d' % (lay_small.cell, lay_big.cell))
 
-# --- 棋谱面板的位置（不能压住棋盘和按钮）---------------------------------
+# --- 棋谱面板的位置（不能压住棋盘）---------------------------------------
 check('全屏：棋谱在棋盘下方',
       lay_big.rec.y >= lay_big.frame_y + lay_big.frame_h,
       '%d %d' % (lay_big.rec.y, lay_big.frame_y + lay_big.frame_h))
-check('全屏：棋谱不遮第一排按钮', lay_big.rec.bottom <= lay_big.row1_y,
-      '%d %d' % (lay_big.rec.bottom, lay_big.row1_y))
 check('全屏：棋谱不出屏', lay_big.rec.bottom < 1080, str(lay_big.rec.bottom))
-check('全屏：按钮不出屏', lay_big.row2_y + lay_big.btn_h2 <= 1080,
-      str(lay_big.row2_y + lay_big.btn_h2))
-check('小屏：棋谱不遮第一排按钮', lay_small.rec.bottom <= lay_small.row1_y,
-      '%d %d' % (lay_small.rec.bottom, lay_small.row1_y))
-check('小屏：按钮不出屏', lay_small.row2_y + lay_small.btn_h2 <= 768,
-      str(lay_small.row2_y + lay_small.btn_h2))
-check('窗口：棋谱不遮第一排按钮', app.layout.rec.bottom <= app.layout.row1_y,
-      '%d %d' % (app.layout.rec.bottom, app.layout.row1_y))
+check('小屏：棋谱不出屏', lay_small.rec.bottom < 768, str(lay_small.rec.bottom))
+check('窗口：棋谱不出屏', app.layout.rec.bottom < 1000, str(app.layout.rec.bottom))
+check('暂停按钮在顶栏里', lay_big.banner.colliderect(lay_big.pause_btn))
+check('暂停面板在屏幕内',
+      lay_big.pause_box.left >= 0 and lay_big.pause_box.right <= 1920
+      and lay_big.pause_box.top >= 0 and lay_big.pause_box.bottom <= 1080,
+      str(lay_big.pause_box))
 
 # --- 双人模式：点击选中 -> 点击落子 ---------------------------------------
 app.mode = 'pvp'
@@ -147,11 +145,14 @@ check('提示功能给出着法', app.hint_move is not None, str(app.hint_move))
 check('横幅显示轮次', '你的回合' in app.turn_text() or '电脑回合' in app.turn_text(),
       app.turn_text())
 check('横幅有副标题', bool(app.sub_text()), repr(app.sub_text()))
-check('提示文字不超出画布', app.tip_surface().get_width() <= app.layout.w - 24,
-      str(app.tip_surface().get_width()))
+check('提示文字在暂停面板里放得下',
+      max(app.fonts.get(app.layout.f_tip).render(t, True, (0, 0, 0)).get_width()
+          for t in ('左键选子落子 · 右键取消 · Esc 打开/关闭本菜单',
+                    'R 新局 · U 悔棋 · H 提示 · S 保存 · L 读取 · F 全屏'))
+      <= app.layout.pause_box.width - 56)
 check('按钮都在画布内',
       all(b['rect'].right <= app.layout.w and b['rect'].bottom <= app.layout.h
-          for b in app.buttons))
+          for b in app.pause_buttons))
 
 # --- 将军（黑方可以吃车，故不是绝杀）--------------------------------------
 app.new_game()
@@ -206,9 +207,17 @@ app.apply_display = saved_display
 app.set_layout(app.screen.get_size())
 
 # --- 按钮点击（模拟真实鼠标）--------------------------------------------
-btn = [b for b in app.buttons if b['id'] == 'undo'][0]
+app.paused = True
+btn = [b for b in app.pause_buttons if b['id'] == 'undo'][0]
 app.on_left_click(btn['rect'].center)
 check('点击悔棋按钮不报错', app.state.turn == RED)
+check('暂停时仍能操作菜单', app.paused is True)
+resume = [b for b in app.pause_buttons if b['id'] == 'resume'][0]
+app.on_left_click(resume['rect'].center)
+check('点继续后关掉菜单', app.paused is False)
+app.on_left_click(app.layout.pause_btn.center)
+check('点顶栏按钮能打开菜单', app.paused is True)
+app.on_left_click(resume['rect'].center)
 
 # --- 棋谱记录面板 ---------------------------------------------------------
 app.new_game()
@@ -224,8 +233,7 @@ check('棋谱标出红黑方', items and items[0]['side'] == RED and items[1]['s
 check('棋谱条目含着法', items and items[0]['note'] == '炮八平五', str(items[:1]))
 check('棋谱面板在棋盘下方',
       app.layout.rec.y >= app.layout.frame_y + app.layout.frame_h)
-check('棋谱面板不遮第一排按钮', app.layout.rec.bottom <= app.layout.row1_y)
-check('棋谱面板不遮第二排按钮', app.layout.row2_y > app.layout.rec.bottom)
+check('棋谱面板不出屏', app.layout.rec.bottom < 1000, str(app.layout.rec.bottom))
 
 # 多走几步，棋谱超出面板高度才能翻页
 for _ in range(4):
@@ -293,6 +301,11 @@ app.set_layout((1920, 1080))
 app.draw()
 pygame.image.save(app.screen, os.path.join(TMP, 'xq_fullscreen.png'))
 check('全屏截图已生成', os.path.exists(os.path.join(TMP, 'xq_fullscreen.png')))
+
+app.paused = True
+app.draw()
+pygame.image.save(app.screen, os.path.join(TMP, 'xq_pause.png'))
+check('暂停界面截图已生成', os.path.exists(os.path.join(TMP, 'xq_pause.png')))
 
 print('\nFAILURES: %d' % len(fails))
 if fails:

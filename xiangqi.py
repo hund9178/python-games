@@ -63,6 +63,8 @@ C_BTN = (58, 98, 136)
 C_BTN_HOVER = (76, 126, 168)
 C_BTN2 = (104, 114, 80)
 C_BTN2_HOVER = (126, 138, 100)
+C_BTN_EXIT = (162, 54, 48)
+C_BTN_EXIT_HOVER = (188, 70, 62)
 C_BTN_LINE = (36, 40, 46)
 C_BUTTON_TEXT = (255, 255, 255)
 C_REC_BG = (250, 247, 239)
@@ -120,17 +122,14 @@ class Layout:
         pad = 16
         banner_h = 92 if big else 80
         tip_h = 30 if big else 24
-        btn_h1 = 64 if big else 58
-        btn_h2 = 56 if big else 50
-        btn_gap = 12
         gap = 16
 
         # 棋谱面板先按比例留位置
         rec_h = int(min(150, max(96, h * 0.13)))
 
-        # 除棋盘和棋谱面板外必须占用的高度
-        fixed = (pad + banner_h + gap + gap + gap + btn_h1 + btn_gap
-                 + btn_h2 + gap // 2 + tip_h + pad)
+        # 除棋盘和棋谱面板外必须占用的高度。
+        # 按钮行和操作提示都收进了暂停界面，这里不再为它们留位置，棋盘可以画得更大。
+        fixed = (pad + banner_h + gap + gap + gap + pad)
         cell = (h - fixed - rec_h) // 10
         cell_w = (w - 2 * pad) // 9
         cell = max(30, min(cell, cell_w))
@@ -151,33 +150,27 @@ class Layout:
         # 棋谱面板：紧贴棋盘下方
         self.rec = pygame.Rect(self.frame_x, self.frame_y + self.frame_h + gap,
                                self.frame_w, rec_h)
-        self.row1_y = self.rec.bottom + gap
-        self.row2_y = self.row1_y + btn_h1 + btn_gap
-        self.tip_y = self.row2_y + btn_h2 + gap // 2
-        self.btn_gap = btn_gap
-        self.btn_h1 = btn_h1
-        self.btn_h2 = btn_h2
-        # 按钮排比棋盘略宽一点，保证字大、点得准
-        self.btn_row_w = int(max(self.frame_w, min(w - 2 * pad, 620)))
-        self.btn_x = (w - self.btn_row_w) // 2
-        self.btn_w = (self.btn_row_w - 2 * btn_gap) // 3
-        self.btn_w4 = (self.btn_row_w - 3 * btn_gap) // 4
-
         # 棋谱面板里剩余的高度补给面板本身
         rest = h - (fixed + self.frame_h)
-        self.rec.height = int(max(56, min(190, rest)))
-        self.row1_y = self.rec.bottom + gap
-        self.row2_y = self.row1_y + btn_h1 + btn_gap
-        self.tip_y = self.row2_y + btn_h2 + gap // 2
+        self.rec.height = int(max(56, min(260, rest)))
+
+        # 暂停弹窗先算好，按钮字号才有着落
+        self._build_pause_box(w, h, big, tip_h)
 
         # 字号随格子大小缩放
         self.f_piece = max(22, int(cell * 0.52))
         self.f_river = max(20, int(cell * 0.48))
         self.f_turn = max(28, int(banner_h * 0.40))
         self.f_sub = max(20, int(banner_h * 0.26))
-        self.f_btn = max(20, int(btn_h1 * 0.42))
-        self.f_btn2 = max(18, int(btn_h2 * 0.42))
+        self.f_btn = max(20, int(self.pause_row1_h * 0.42))
+        self.f_btn2 = max(18, int(self.pause_row2_h * 0.42))
         self.f_tip = max(16, min(24, int(h * 0.024)))
+
+        # 顶栏右上角的「暂停」小按钮
+        self.pause_btn_w = int(max(72, min(110, self.frame_w // 6)))
+        self.pause_btn_h = 38 if big else 32
+        self.f_pause_btn = max(17, int(self.pause_btn_h * 0.52))
+        self.f_pause_title = max(26, int(banner_h * 0.50))
 
         # 棋谱文字
         self.f_rec = max(17, int(cell * 0.40))
@@ -189,9 +182,59 @@ class Layout:
         self.wide = (w / float(max(1, h))) >= 1.25
         self.card = pygame.Rect(0, 0, 0, 0)
         if self.wide:
-            cw = max(self.frame_w + 56, self.btn_row_w + 28)
-            ch = (self.tip_y + 20) - (pad - 14)
+            cw = self.frame_w + 56
+            ch = (self.rec.bottom + 18) - (pad - 14)
             self.card = pygame.Rect((w - cw) // 2, pad - 14, cw, ch)
+
+        # ---- 暂停界面 ----
+        self.pause_btn = pygame.Rect(
+            self.banner.right - self.pause_btn_w - 12,
+            self.banner.y + (banner_h - self.pause_btn_h) // 2,
+            self.pause_btn_w, self.pause_btn_h)
+
+    def _build_pause_box(self, w, h, big, tip_h=24):
+        """暂停弹窗的尺寸和内部按钮排布。"""
+        gap = 14
+        pad_x = 30
+
+        self.pause_row1_h = 64 if big else 56
+        self.pause_row2_h = 56 if big else 48
+        self.pause_row3_h = 60 if big else 52
+        self.pause_title_h = 54
+        self.pause_tip_h = tip_h + 22
+
+        pw = int(min(620, w - 2 * 40))
+        inner_w = pw - pad_x * 2
+
+        need_h = (pad_x + self.pause_title_h + self.pause_row1_h + gap
+                  + self.pause_row2_h + gap + self.pause_row3_h + gap
+                  + self.pause_tip_h + pad_x)
+        # 屏幕太矮时按比例缩小按钮，别让面板超出屏幕
+        avail = h - 2 * 40
+        if need_h > avail and need_h > 0:
+            k = avail / float(need_h)
+            self.pause_row1_h = int(self.pause_row1_h * k)
+            self.pause_row2_h = int(self.pause_row2_h * k)
+            self.pause_row3_h = int(self.pause_row3_h * k)
+            self.pause_title_h = int(self.pause_title_h * k)
+            self.pause_tip_h = int(self.pause_tip_h * k)
+            need_h = avail
+        ph = int(min(need_h, avail))
+
+        self.pause_box = pygame.Rect((w - pw) // 2, (h - ph) // 2, pw, ph)
+        self.pause_title_y = self.pause_box.y + pad_x + self.pause_title_h // 2
+
+        top = self.pause_box.y + pad_x + self.pause_title_h
+        self.pause_row1_y = top
+        self.pause_row2_y = self.pause_row1_y + self.pause_row1_h + gap
+        self.pause_row3_y = self.pause_row2_y + self.pause_row2_h + gap
+        self.pause_tip_y = self.pause_row3_y + self.pause_row3_h + gap
+
+        self.pause_x = self.pause_box.x + pad_x
+        self.pause_gap = gap
+        self.pause_w3 = (inner_w - 2 * gap) // 3
+        self.pause_w4 = (inner_w - 3 * gap) // 4
+        self.pause_w2 = (inner_w - gap) // 2
 
     def board_x(self, col):
         return self.board_x0 + col * self.cell
@@ -300,7 +343,7 @@ class XiangqiApp:
         self.screen = None
         self.layout = None
         self.icon = self._make_icon()
-        self.buttons = []
+        self.paused = False
         self.rec_buttons = []
         self.apply_display()
         self.clock = pygame.time.Clock()
@@ -384,19 +427,30 @@ class XiangqiApp:
 
     def _build_buttons(self):
         L = self.layout
-        self.buttons = []
+        # 暂停界面里的按钮
+        self.pause_buttons = []
+
         row1 = [('new', '新 局'), ('undo', '悔 棋'), ('hint', '提 示')]
         for i, (bid, label) in enumerate(row1):
-            x = L.btn_x + i * (L.btn_w + L.btn_gap)
-            self.buttons.append({'id': bid, 'label': label,
-                                 'rect': pygame.Rect(x, L.row1_y, L.btn_w, L.btn_h1),
-                                 'big': True})
+            x = L.pause_x + i * (L.pause_w3 + L.pause_gap)
+            self.pause_buttons.append({'id': bid, 'label': label,
+                                       'rect': pygame.Rect(x, L.pause_row1_y,
+                                                           L.pause_w3, L.pause_row1_h),
+                                       'style': 'primary'})
         row2 = [('level', ''), ('mode', ''), ('sound', ''), ('full', '')]
         for i, (bid, label) in enumerate(row2):
-            x = L.btn_x + i * (L.btn_w4 + L.btn_gap)
-            self.buttons.append({'id': bid, 'label': label,
-                                 'rect': pygame.Rect(x, L.row2_y, L.btn_w4, L.btn_h2),
-                                 'big': False})
+            x = L.pause_x + i * (L.pause_w4 + L.pause_gap)
+            self.pause_buttons.append({'id': bid, 'label': label,
+                                       'rect': pygame.Rect(x, L.pause_row2_y,
+                                                           L.pause_w4, L.pause_row2_h),
+                                       'style': 'normal'})
+        row3 = [('resume', '继 续'), ('exit', '退 出')]
+        for i, (bid, label) in enumerate(row3):
+            x = L.pause_x + i * (L.pause_w2 + L.pause_gap)
+            self.pause_buttons.append({'id': bid, 'label': label,
+                                       'rect': pygame.Rect(x, L.pause_row3_y,
+                                                           L.pause_w2, L.pause_row3_h),
+                                       'style': 'danger' if bid == 'exit' else 'primary'})
 
         # 棋谱面板右上角的小按钮：保存 / 读取 / 上翻 / 下翻
         self.rec_buttons = []
@@ -531,7 +585,9 @@ class XiangqiApp:
             return
         if ev.type == pygame.KEYDOWN:
             if ev.key == pygame.K_ESCAPE:
-                self.running = False
+                self.paused = not self.paused
+            elif self.paused:
+                return
             elif ev.key == pygame.K_r:
                 self.new_game()
             elif ev.key == pygame.K_u:
@@ -560,10 +616,16 @@ class XiangqiApp:
                 self.hint_move = None
 
     def on_left_click(self, pos):
-        for btn in self.buttons:
-            if btn['rect'].collidepoint(pos):
-                self.on_button(btn['id'])
-                return
+        if self.paused:
+            # 暂停时只认暂停面板里的按钮
+            for btn in self.pause_buttons:
+                if btn['rect'].collidepoint(pos):
+                    self.on_button(btn['id'])
+                    return
+            return
+        if self.layout.pause_btn.collidepoint(pos):
+            self.paused = True
+            return
         for btn in self.rec_buttons:
             if btn['rect'].collidepoint(pos):
                 self.on_rec_button(btn['id'])
@@ -629,6 +691,10 @@ class XiangqiApp:
             self.toggle_mode()
         elif bid == 'full':
             self.toggle_fullscreen()
+        elif bid == 'resume':
+            self.paused = False
+        elif bid == 'exit':
+            self.running = False
 
     def on_rec_button(self, bid):
         if bid == 'save':
@@ -839,10 +905,11 @@ class XiangqiApp:
         self.draw_board()
         self.draw_pieces()
         self.draw_record()
-        self.draw_buttons()
-        self.draw_tip()
+        self.draw_pause_button()
         self.draw_overlay()
         self.draw_font_warning()
+        if self.paused:
+            self.draw_pause_panel()
         pygame.display.flip()
 
     def draw_font_warning(self):
@@ -876,9 +943,12 @@ class XiangqiApp:
         pygame.draw.rect(self.screen, C_BANNER, rect, border_radius=12)
         pygame.draw.rect(self.screen, C_BANNER_LINE, rect, border_radius=12, width=2)
 
+        # 文字往左让一点，别顶到右边的「暂停」按钮
+        text_cx = rect.x + (rect.width - L.pause_btn_w - 16) // 2
+
         f1 = self.fonts.get(L.f_turn, bold=True)
         img = f1.render(self.turn_text(), True, C_TEXT_DARK)
-        self.screen.blit(img, img.get_rect(center=(rect.centerx, rect.y + L.banner_h * 0.38)))
+        self.screen.blit(img, img.get_rect(center=(text_cx, rect.y + L.banner_h * 0.38)))
 
         f2 = self.fonts.get(L.f_sub)
         sub = self.sub_text()
@@ -889,7 +959,7 @@ class XiangqiApp:
         else:
             color = C_TEXT_DIM
         img = f2.render(sub, True, color)
-        self.screen.blit(img, img.get_rect(center=(rect.centerx, rect.y + L.banner_h * 0.76)))
+        self.screen.blit(img, img.get_rect(center=(text_cx, rect.y + L.banner_h * 0.76)))
 
     def draw_board(self):
         L = self.layout
@@ -1139,42 +1209,87 @@ class XiangqiApp:
         self.screen.blit(cimg, (body.x + 14 + img.get_width(),
                                 y + (row_h - cimg.get_height()) // 2))
 
-    def draw_buttons(self):
+    def draw_pause_button(self):
+        """顶栏右上角的「暂停」按钮。"""
         L = self.layout
-        for btn in self.buttons:
-            rect = btn['rect']
-            hover = rect.collidepoint(pygame.mouse.get_pos())
-            if btn['big']:
-                fill = C_BTN_HOVER if hover else C_BTN
-                f = self.fonts.get(L.f_btn, bold=True)
-            else:
-                fill = C_BTN2_HOVER if hover else C_BTN2
-                f = self.fonts.get(L.f_btn2)
-            pygame.draw.rect(self.screen, fill, rect, border_radius=10)
-            pygame.draw.rect(self.screen, C_BTN_LINE, rect, border_radius=10, width=2)
-            label = self.button_label(btn['id'], btn['label'])
-            t = f.render(label, True, C_BUTTON_TEXT)
-            self.screen.blit(t, t.get_rect(center=rect.center))
+        rect = L.pause_btn
+        hover = rect.collidepoint(pygame.mouse.get_pos())
+        fill = C_BTN_HOVER if hover else C_BTN
+        pygame.draw.rect(self.screen, fill, rect, border_radius=8)
+        pygame.draw.rect(self.screen, C_BTN_LINE, rect, border_radius=8, width=2)
+        f = self.fonts.get(L.f_pause_btn, bold=True)
+        img = f.render('暂 停', True, C_BUTTON_TEXT)
+        self.screen.blit(img, img.get_rect(center=rect.center))
 
-    def tip_surface(self):
-        """底部提示文字，字号自动缩小以适应画布宽度。"""
+    def draw_pause_panel(self):
+        """暂停界面：压暗背景，中间弹出一个面板装着所有按钮。"""
         L = self.layout
-        text = ('左键选子落子 · 右键取消 · R新局 · U悔棋 · H提示 · '
-                'S保存 · L读取 · F全屏 · Esc退出')
-        size = L.f_tip
-        img = self.fonts.get(size).render(text, True, C_TEXT_DIM)
-        limit = L.w - 24
-        if L.card.width > 0:
-            limit = min(limit, L.card.width - 24)
-        while img.get_width() > limit and size > 12:
+        veil = pygame.Surface((L.w, L.h), pygame.SRCALPHA)
+        veil.fill((24, 20, 16, 165))
+        self.screen.blit(veil, (0, 0))
+
+        box = L.pause_box
+        shadow = pygame.Surface((box.width + 28, box.height + 28), pygame.SRCALPHA)
+        pygame.draw.rect(shadow, (0, 0, 0, 80), shadow.get_rect(), border_radius=20)
+        self.screen.blit(shadow, (box.x - 14, box.y - 8))
+        pygame.draw.rect(self.screen, C_CARD, box, border_radius=18)
+        pygame.draw.rect(self.screen, C_CARD_LINE, box, border_radius=18, width=3)
+
+        f = self.fonts.get(L.f_pause_title, bold=True)
+        img = f.render('暂  停', True, C_TEXT_DARK)
+        self.screen.blit(img, img.get_rect(center=(box.centerx, L.pause_title_y)))
+
+        line_y = L.pause_row1_y - L.pause_gap // 2
+        pygame.draw.line(self.screen, C_CARD_LINE,
+                         (box.x + 24, line_y), (box.right - 24, line_y), 2)
+
+        for btn in self.pause_buttons:
+            self.draw_pause_item(btn)
+
+        self.draw_pause_tip()
+
+    def draw_pause_item(self, btn):
+        """暂停面板里的一个按钮。"""
+        L = self.layout
+        rect = btn['rect']
+        hover = rect.collidepoint(pygame.mouse.get_pos())
+        style = btn.get('style', 'primary')
+        if style == 'danger':
+            fill = C_BTN_EXIT_HOVER if hover else C_BTN_EXIT
+            size, bold = L.f_btn, True
+        elif style == 'normal':
+            fill = C_BTN2_HOVER if hover else C_BTN2
+            size, bold = L.f_btn2, False
+        else:
+            fill = C_BTN_HOVER if hover else C_BTN
+            size, bold = L.f_btn, True
+        pygame.draw.rect(self.screen, fill, rect, border_radius=10)
+        pygame.draw.rect(self.screen, C_BTN_LINE, rect, border_radius=10, width=2)
+        label = self.button_label(btn['id'], btn['label'])
+        f = self.fonts.get(size, bold=bold)
+        t = f.render(label, True, C_BUTTON_TEXT)
+        # 字太长就自动缩一号，免得顶出按钮
+        while size > 12 and t.get_width() > rect.width - 12:
             size -= 1
-            img = self.fonts.get(size).render(text, True, C_TEXT_DIM)
-        return img
+            f = self.fonts.get(size, bold=bold)
+            t = f.render(label, True, C_BUTTON_TEXT)
+        self.screen.blit(t, t.get_rect(center=rect.center))
 
-    def draw_tip(self):
+    def draw_pause_tip(self):
+        """暂停面板底部的操作说明。"""
         L = self.layout
-        img = self.tip_surface()
-        self.screen.blit(img, img.get_rect(center=(L.w // 2, L.tip_y)))
+        lines = ['左键选子落子 · 右键取消 · Esc 打开/关闭本菜单',
+                 'R 新局 · U 悔棋 · H 提示 · S 保存 · L 读取 · F 全屏']
+        size = L.f_tip
+        limit = L.pause_box.width - 56
+        imgs = [self.fonts.get(size).render(t, True, C_TEXT_DIM) for t in lines]
+        while size > 12 and max(i.get_width() for i in imgs) > limit:
+            size -= 1
+            imgs = [self.fonts.get(size).render(t, True, C_TEXT_DIM) for t in lines]
+        y = L.pause_tip_y
+        for img in imgs:
+            self.screen.blit(img, img.get_rect(center=(L.pause_box.centerx, y)))
+            y += img.get_height() + 4
 
     def draw_overlay(self):
         if not self.result:
@@ -1202,7 +1317,7 @@ class XiangqiApp:
         img = f2.render(msg, True, (238, 228, 212))
         self.screen.blit(img, img.get_rect(center=(cx, cy + int(L.cell * 0.45))))
         f3 = self.fonts.get(max(18, int(L.cell * 0.35)))
-        img = f3.render('点“新 局”再来一盘', True, (196, 206, 214))
+        img = f3.render('按 Esc 打开菜单，点「新 局」再来一盘', True, (196, 206, 214))
         self.screen.blit(img, img.get_rect(center=(cx, cy + int(L.cell * 1.05))))
 
     # -- 主循环 ------------------------------------------------------------
